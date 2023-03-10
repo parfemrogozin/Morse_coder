@@ -1,2 +1,2 @@
-# Morse_coder
+# Morse coder
 Morse code generation
