@@ -12,24 +12,104 @@
   *
 */
 
-int16_t get_sample(const double frequency, const double sample_rate, const unsigned long sample_index)
+enum SOUNDS
 {
-  double func_output = sin(sample_index * frequency * M_PI * 2 / sample_rate);
+  SILENCE = 0,
+  DIT = 1,
+  DAH = 2
+};
+
+struct wave_settings
+{
+  double frequency;
+  double sample_rate;
+};
+
+int16_t get_sample(struct wave_settings settings, const unsigned int sample_index)
+{
+  double func_output = sin(sample_index * settings.frequency * M_PI * 2 / settings.sample_rate);
   return (int16_t) (func_output * 32567);
 }
 
-int16_t * create_sound(const double sample_rate, const double frequency, float lenght)
+int16_t * create_sound(struct wave_settings settings, float lenght)
 {
-  unsigned long sample_no = (unsigned long) sample_rate * lenght;
+  unsigned int sample_no = (unsigned long) settings.sample_rate * lenght;
   int16_t * sound = (int16_t *)calloc(sample_no, sizeof(int16_t));
 
   for (int i = 0; i < sample_no; i++)
   {
-    sound[i] = get_sample(frequency, sample_rate, i);
+    sound[i] = get_sample(settings, i);
   }
 
   return sound;
 }
+
+int create_sound_table(struct wave_settings settings, int16_t * table[3])
+{
+  table[SILENCE] = (int16_t *)calloc(settings.sample_rate, sizeof(int16_t));
+  table[DIT] = create_sound(settings, 1);
+  table[DAH] = create_sound(settings, 3);
+  return 0;
+}
+
+void destroy_sound_table(int16_t * table[3])
+{
+  for (int i = 0; i < 3; i++)
+  {
+    free(table[i]);
+  }
+}
+
+void insert_silence(SDL_AudioDeviceID deviceId, int16_t * sound, struct wave_settings settings, const unsigned int times)
+{
+  Uint32 len = settings.sample_rate * sizeof(int16_t);
+  for (int t = 0; t < times; t++)
+  {
+    SDL_QueueAudio(deviceId, sound, len);
+  }
+}
+
+void snd_encode_char(SDL_AudioDeviceID deviceId, struct wave_settings settings, int16_t * table[3], char ditdah)
+{
+  int signal = 1;
+  const char mask = 0b00000011;
+  char shifted_mask;
+  char shift = 0;
+  char flag;
+
+  Uint32 len = settings.sample_rate * sizeof(int16_t);
+
+  if ( ditdah == 0b10 )
+  {
+    insert_silence(deviceId, table[SILENCE], settings, 7);
+    signal = 0;
+  }
+
+  while (signal)
+  {
+    shifted_mask = mask << shift;
+    flag = shifted_mask & ditdah;
+    flag = flag >> shift;
+
+    switch(flag)
+    {
+      case 1:
+        SDL_QueueAudio(deviceId, table[DIT], len);
+        insert_silence(deviceId, table[SILENCE], settings, 1);
+        break;
+      case 3:
+        SDL_QueueAudio(deviceId, table[DAH], len * 3);
+        insert_silence(deviceId, table[SILENCE], settings, 1);
+        break;
+      default:
+        signal = 0;
+        break;
+    }
+    shift += 2;
+  }
+
+}
+
 
 int main(int argc, char **argv)
 {
@@ -42,29 +122,18 @@ int main(int argc, char **argv)
   .callback = NULL,
   .userdata = NULL
   };
-  Uint32 sound_lenght = 4800 * sizeof(int16_t);
+
+  struct wave_settings settings = {800, 48000};
+  int16_t * table[3];
+  create_sound_table(settings, table);
 
   SDL_Init(SDL_INIT_AUDIO);
   SDL_AudioDeviceID deviceId = SDL_OpenAudioDevice(NULL, 0, &spec, NULL, 0);
+  SDL_PauseAudioDevice(deviceId, 0);
 
+  snd_encode_char(deviceId, settings, table, 0b01010111);
 
-  int16_t * dit = create_sound(48000, 800.0f, 1);
-  int16_t * dah = create_sound(48000, 800.0f, 3);
-  int16_t * silence = (int16_t *)calloc(48000, sizeof(int16_t));
-
-  SDL_PauseAudioDevice(deviceId, 0); /* unpause FIRST */
-  SDL_QueueAudio(deviceId, dit, sound_lenght);
-  SDL_QueueAudio(deviceId, silence, sound_lenght);
-  SDL_QueueAudio(deviceId, dah, sound_lenght * 3);
-  SDL_QueueAudio(deviceId, silence, sound_lenght);
-  SDL_QueueAudio(deviceId, dit, sound_lenght);
-  SDL_QueueAudio(deviceId, silence, sound_lenght);
-  SDL_QueueAudio(deviceId, silence, sound_lenght);
-  SDL_QueueAudio(deviceId, silence, sound_lenght);
-
-  free(dit);
-  free(dah);
-  SDL_Delay(900);
+  SDL_Delay(9000);
   SDL_CloseAudioDevice(deviceId);
   SDL_Quit();
 
