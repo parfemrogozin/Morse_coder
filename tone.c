@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <SDL2/SDL.h>
+#include "tone.h"
 
 /*
   * short mark, dot or dit ( . ): 1
@@ -11,19 +12,6 @@
   * medium gap (between words): 7
   *
 */
-
-enum SOUNDS
-{
-  SILENCE = 0,
-  DIT = 1,
-  DAH = 2
-};
-
-struct wave_settings
-{
-  double frequency;
-  double sample_rate;
-};
 
 int16_t get_sample(struct wave_settings settings, const unsigned int sample_index)
 {
@@ -134,6 +122,7 @@ int main(int argc, char **argv)
   snd_encode_char(deviceId, settings, table, 0b01010111);
 
   SDL_Delay(9000);
+  destroy_sound_table(table);
   SDL_CloseAudioDevice(deviceId);
   SDL_Quit();
 
