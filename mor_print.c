@@ -4,10 +4,10 @@
 
 void get_dot_dash_char(unsigned int ditdah, char * letter_buffer)
 {
-  char tone;
-  const char mask = 0b00000011;
-  char shifted_mask;
-  char shift = 0;
+  unsigned int tone;
+  const unsigned int mask = 0b00000011;
+  unsigned int shifted_mask;
+  unsigned int shift = 0;
   size_t i = 0;
   int signal = 1;
   if ( ditdah == 0b10 )
