@@ -25,19 +25,18 @@
 * X 0b11010111
 * Y 0b11110111
 * Z 0b01011111
-
+*
+* PROSIGN_AR 0b0111011101
 */
-#define N_LETTERS 26
 
-const char letter[N_LETTERS] = {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J',
-                      'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T',
-                      'U', 'V', 'W', 'X', 'Y', 'Z'};
+#ifndef MORSECODE_H_INCLUDED
+#define MORSECODE_H_INCLUDED
+  #define N_LETTERS 26
 
-const char ditdah[N_LETTERS] = {0b1101, 0b01010111, 0b01110111, 0b010111, 0b01,
-                      0b01110101, 0b011111, 0b01010101, 0b0101,
-                      0b11111101, 0b110111, 0b01011101, 0b1111, 0b0111,
-                      0b111111, 0b01111101, 0b11011111, 0b011101,
-                      0b010101, 0b11, 0b110101, 0b11010101, 0b111101,
-                      0b11010111, 0b11110111, 0b01011111};
+  extern const char letter[];
+  extern const unsigned int ditdah[];
 
 
+  int search_array(const char needle, const char * haystack);
+  void get_ditdah(char * input, unsigned int * output);
+#endif

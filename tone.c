@@ -1,7 +1,6 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <math.h>
-#include <SDL2/SDL.h>
 #include "tone.h"
 
 /*
@@ -34,7 +33,7 @@ static int16_t * create_sound(float lenght)
   unsigned int sample_no = (unsigned int) SETTINGS.sample_rate * lenght * SETTINGS.lenght_unit;
   int16_t * sound = (int16_t *)calloc(sample_no, sizeof(int16_t));
 
-  for (int i = 0; i < sample_no; i++)
+  for (unsigned int i = 0; i < sample_no; i++)
   {
     sound[i] = get_sample(i, SETTINGS.sample_rate, SETTINGS.frequency);
   }
@@ -77,6 +76,7 @@ SDL_AudioDeviceID tone_init(const double sample_rate, const double frequency, co
   };
 
   SDL_Init(SDL_INIT_AUDIO);
+  SDL_LogSetPriority(SDL_LOG_CATEGORY_AUDIO, SDL_LOG_PRIORITY_VERBOSE); /* DEBUG */
   SDL_AudioDeviceID device_id = SDL_OpenAudioDevice(NULL, 0, &spec, NULL, 0);
 
   SDL_PauseAudioDevice(device_id, 0);
@@ -85,19 +85,19 @@ SDL_AudioDeviceID tone_init(const double sample_rate, const double frequency, co
 
 void tone_destroy(SDL_AudioDeviceID device_id)
 {
-  /*SDL_PauseAudioDevice(device_id, 1);*/
+  SDL_PauseAudioDevice(device_id, 1);
   destroy_sound_table();
   SDL_CloseAudioDevice(device_id);
   SDL_Quit();
 }
 
-void snd_encode_char(SDL_AudioDeviceID deviceId, char ditdah)
+void tone_encode_char(SDL_AudioDeviceID device_id, unsigned int ditdah)
 {
   int signal = 1;
-  const char mask = 0b00000011;
-  char shifted_mask;
-  char shift = 0;
-  char flag;
+  unsigned int mask = 0b11;
+  unsigned int shifted_mask;
+  unsigned int shift = 0;
+  unsigned int flag;
 
   Uint32 len = SETTINGS.sample_rate * SETTINGS.lenght_unit * sizeof(int16_t);
 
@@ -105,7 +105,7 @@ void snd_encode_char(SDL_AudioDeviceID deviceId, char ditdah)
   {
     for (int i = 0; i < 7; i++)
     {
-      SDL_QueueAudio(deviceId, TABLE[SILENCE], len);
+      SDL_QueueAudio(device_id, TABLE[SILENCE], len);
     }
     signal = 0;
   }
@@ -115,45 +115,31 @@ void snd_encode_char(SDL_AudioDeviceID deviceId, char ditdah)
     shifted_mask = mask << shift;
     flag = shifted_mask & ditdah;
     flag = flag >> shift;
-
     switch(flag)
     {
       case 1:
-        SDL_QueueAudio(deviceId, TABLE[DIT], len);
-        SDL_QueueAudio(deviceId, TABLE[SILENCE], len);
+        SDL_QueueAudio(device_id, TABLE[DIT], len);
+        SDL_QueueAudio(device_id, TABLE[SILENCE], len);
         break;
       case 3:
-        SDL_QueueAudio(deviceId, TABLE[DAH], len * 3);
-        SDL_QueueAudio(deviceId, TABLE[SILENCE], len);
+        SDL_QueueAudio(device_id, TABLE[DAH], len * 3);
+        SDL_QueueAudio(device_id, TABLE[SILENCE], len);
         break;
       default:
         signal = 0;
+      SDL_QueueAudio(device_id, TABLE[SILENCE], len);
+      SDL_QueueAudio(device_id, TABLE[SILENCE], len);
         break;
     }
     shift += 2;
   }
-
 }
 
-
-int main(int argc, char **argv)
+void tone_encode_string(SDL_AudioDeviceID device_id, unsigned int mes_encoded[80])
 {
-  SDL_LogSetPriority(SDL_LOG_CATEGORY_AUDIO, SDL_LOG_PRIORITY_VERBOSE);
-
-  SDL_AudioDeviceID device_id = tone_init(48000, 800, 0.1f);
-
-  snd_encode_char(device_id, 0b01010111);
-  Uint32 queue = 0;
-  SDL_LogDebug(SDL_LOG_CATEGORY_AUDIO, "queued: %d", queue);
-  do
+  while (*mes_encoded !=0)
   {
-    SDL_Delay(1);
-    queue = SDL_GetQueuedAudioSize(device_id);
+    tone_encode_char(device_id, *mes_encoded);
+    mes_encoded++;
   }
-  while (queue > 0);
-
-
-  tone_destroy(device_id);
-
-  return 0;
 }

@@ -1,9 +1,8 @@
 #include <stddef.h>
 #include <string.h>
-
 #include "mor_print.h"
 
-void get_dot_dash_char(char ditdah, char * letter_buffer)
+void get_dot_dash_char(unsigned int ditdah, char * letter_buffer)
 {
   char tone;
   const char mask = 0b00000011;
@@ -44,7 +43,7 @@ void get_dot_dash_char(char ditdah, char * letter_buffer)
 
 }
 
-void get_dot_dash_string(char * input, char * output)
+void get_dot_dash_string(unsigned int * input, char * output)
 {
   char buffer[6];
   size_t i = 0;
