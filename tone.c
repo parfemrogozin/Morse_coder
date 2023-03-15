@@ -85,7 +85,7 @@ SDL_AudioDeviceID tone_init(const double sample_rate, const double frequency, co
 
 void tone_destroy(SDL_AudioDeviceID device_id)
 {
-  SDL_PauseAudioDevice(device_id, 1);
+  /*SDL_PauseAudioDevice(device_id, 1);*/
   destroy_sound_table();
   SDL_CloseAudioDevice(device_id);
   SDL_Quit();
@@ -138,9 +138,20 @@ void snd_encode_char(SDL_AudioDeviceID deviceId, char ditdah)
 
 int main(int argc, char **argv)
 {
+  SDL_LogSetPriority(SDL_LOG_CATEGORY_AUDIO, SDL_LOG_PRIORITY_VERBOSE);
+
   SDL_AudioDeviceID device_id = tone_init(48000, 800, 0.1f);
 
   snd_encode_char(device_id, 0b01010111);
+  Uint32 queue = 0;
+  SDL_LogDebug(SDL_LOG_CATEGORY_AUDIO, "queued: %d", queue);
+  do
+  {
+    SDL_Delay(1);
+    queue = SDL_GetQueuedAudioSize(device_id);
+  }
+  while (queue > 0);
+
 
   tone_destroy(device_id);
 
