@@ -1,6 +1,6 @@
 CC = gcc
 CFLAGS = -std=gnu18 -Wno-unused-parameter -Wall -Wextra `sdl2-config --cflags`
-LIBS = -lm `sdl2-config --libs`
+LIBS = -lm `sdl2-config --libs` -lreadline
 SRCS = $(wildcard *.c)
 EXECUTABLE = morse
 
